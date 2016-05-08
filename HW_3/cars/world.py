@@ -27,7 +27,7 @@ class World(metaclass=ABCMeta):
 
 class SimpleCarWorld(World):
     COLLISION_PENALTY       =  32.0 # выберите сами
-    HEADING_REWARD          =  0.0 # выберите сами
+    HEADING_REWARD          =  1.0 # выберите сами
     WRONG_HEADING_PENALTY   =  0.0 # выберите сами
     IDLENESS_PENALTY        =  3.2 # выберите сами
     SPEEDING_PENALTY        =  1.0 # выберите сами
@@ -104,7 +104,7 @@ class SimpleCarWorld(World):
         :param collision: произошло ли столкновение со стеной на прошлом шаге
         :return reward: награду агента (возможно, отрицательную)
         """
-        a = np.sin(angle(-state.position, state.heading))
+        a = np.sin(angle(state.position, state.heading))
         heading_reward = 1 if a > 0.1 else a if a > 0 else 0
         heading_penalty = a if a <= 0 else 0
         idle_penalty = 0 if abs(state.velocity) > self.MIN_SPEED else -self.IDLENESS_PENALTY

@@ -169,4 +169,4 @@ class SimpleCarAgent(Agent):
             if error > self.prev_error:
                 self.eta /= 1.2
             self.prev_error = error
-            print("Error function: ", error)
+            print("Step: %4d      Error function: %9.6f" % (self.step, error))
