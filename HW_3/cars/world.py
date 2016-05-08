@@ -26,13 +26,13 @@ class World(metaclass=ABCMeta):
 
 
 class SimpleCarWorld(World):
-    COLLISION_PENALTY =  # выберите сами
-    HEADING_REWARD =  # выберите сами
-    WRONG_HEADING_PENALTY =  # выберите сами
-    IDLENESS_PENALTY =  # выберите сами
-    SPEEDING_PENALTY =  # выберите сами
-    MIN_SPEED =  # выберите сами
-    MAX_SPEED =  # выберите сами
+    COLLISION_PENALTY       =  32.0 # выберите сами
+    HEADING_REWARD          =  0.0 # выберите сами
+    WRONG_HEADING_PENALTY   =  0.0 # выберите сами
+    IDLENESS_PENALTY        =  3.2 # выберите сами
+    SPEEDING_PENALTY        =  1.0 # выберите сами
+    MIN_SPEED               =  0.1 # выберите сами
+    MAX_SPEED               =  0.6 # выберите сами
 
     size = (800, 600)
 
@@ -125,7 +125,7 @@ class SimpleCarWorld(World):
             self.visualize(scale)
             if self._update_display() == pygame.QUIT:
                 break
-            sleep(0.1)
+            #sleep(0.1)
 
         for i, agent in enumerate(self.agents):
             try:
@@ -162,7 +162,7 @@ class SimpleCarWorld(World):
                 self.visualize(scale)
                 if self._update_display() == pygame.QUIT:
                     break
-                sleep(0.05)
+                #sleep(0.05)
 
         return np.mean(rewards)
 
