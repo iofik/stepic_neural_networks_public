@@ -136,14 +136,18 @@ class SimpleCarAgent(Agent):
             kb_steer = 0
             kb_accel = 0
             evs = pygame.key.get_pressed()
+            if evs[275]:
+                kb_accel = 0.75
+                kb_steer = -1
+            elif evs[276]:
+                kb_accel = 0.75
+                kb_steer = 1
             if evs[273]:
                 kb_accel = 0.75
             elif evs[274]:
                 kb_accel = -0.75
-            if evs[275]:
-                kb_steer = -1
-            elif evs[276]:
-                kb_steer = 1
+            if kb_accel == 0 and sensor_info[0] > 0.2 and random.random() < 0.2*sensor_info[0]:
+                kb_accel = -0.75
             best_action = Action(kb_steer, kb_accel)
 
         # запомним всё, что только можно: мы хотим учиться на своих ошибках
@@ -185,11 +189,11 @@ class SimpleCarAgent(Agent):
         y_train = self.reward_history
         train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
         epochs = 300 if self.kb_control else 15
-        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta)
+        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta, verbose=self.kb_control)
         y_hat = self.neural_net.feedforward(X_train.transpose())
         d = y_train - y_hat
         error = np.sum(d*d)/d.shape[1]
         if error > self.prev_error:
-            self.eta /= 1.2
+            self.eta /= 1.1
         self.prev_error = error
         print("Step: %4d      Error function: %9.6f" % (self.step, error))

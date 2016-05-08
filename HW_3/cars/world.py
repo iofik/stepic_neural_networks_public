@@ -36,7 +36,7 @@ class SimpleCarWorld(World):
 
     size = (800, 600)
 
-    def __init__(self, num_agents, car_map, Physics, agent_class, **physics_pars):
+    def __init__(self, num_agents, car_map, Physics, agent_class, kb_control=False, **physics_pars):
         """
         Инициализирует мир
         :param num_agents: число агентов в мире
@@ -48,6 +48,7 @@ class SimpleCarWorld(World):
         """
         self.physics = Physics(car_map, **physics_pars)
         self.map = car_map
+        self.kb_control = kb_control
 
         # создаём агентов
         self.set_agents(num_agents, agent_class)
