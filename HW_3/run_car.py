@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--steps", type=int)
 parser.add_argument("-f", "--filename", type=str)
 parser.add_argument("-e", "--evaluate", type=bool)
+parser.add_argument("-k", "--kb-control", action='store_true')
 parser.add_argument("--seed", type=int)
 args = parser.parse_args()
 
@@ -32,4 +33,9 @@ if args.filename:
         w.set_agents([agent])
         w.run(steps)
 else:
-    SimpleCarWorld(1, m, SimplePhysics, SimpleCarAgent, timedelta=0.2).run(steps)
+    w = SimpleCarWorld(1, m, SimplePhysics, SimpleCarAgent, timedelta=0.2)
+    if args.kb_control:
+        agent = SimpleCarAgent()
+        agent.kb_control = True
+        w.set_agents([agent])
+    w.run(steps)

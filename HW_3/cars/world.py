@@ -129,6 +129,7 @@ class SimpleCarWorld(World):
 
         for i, agent in enumerate(self.agents):
             try:
+                agent.learn()
                 filename = "network_config_agent_%d_layers_%s.txt" % (i, "_".join(map(str, agent.neural_net.sizes)))
                 agent.to_file(filename)
                 print("Saved agent parameters to '%s'" % filename)

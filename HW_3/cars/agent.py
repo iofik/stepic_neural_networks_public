@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 from collections import deque
 
 import numpy as np
+import pygame.key
 
 from cars.utils import Action
 from learning_algorithms.network import Network
@@ -22,6 +23,9 @@ class Agent(metaclass=ABCMeta):
     def receive_feedback(self, reward):
         pass
 
+    @abstractmethod
+    def learn(self):
+        pass
 
 class SimpleCarAgent(Agent):
     def __init__(self, history_data=int(50000)):
@@ -30,6 +34,7 @@ class SimpleCarAgent(Agent):
         :param history_data: количество хранимых нами данных о результатах предыдущих шагов
         """
         self.evaluate_mode = False  # этот агент учится или экзаменутеся? если учится, то False
+        self.kb_control = False
         self._rays = 5 # выберите число лучей ладара; например, 5
         # here +2 is for 2 inputs from elements of Action that we are trying to predict
         self.neural_net = Network([self.rays + 4,
@@ -44,6 +49,8 @@ class SimpleCarAgent(Agent):
         self.step = 0
         self.eta = 0.05
         self.prev_error = np.infty
+        self.train_every = 50  # сколько нужно собрать наблюдений, прежде чем запустить обучение на несколько эпох
+        self.reward_depth = 7 # на какую глубину по времени распространяется полученная награда
 
     @classmethod
     def from_weights(cls, layers, weights, biases):
@@ -125,6 +132,20 @@ class SimpleCarAgent(Agent):
         # else:
         #     print("Chosen action w/reward: {}".format(highest_reward))
 
+        if self.kb_control:
+            kb_steer = 0
+            kb_accel = 0
+            evs = pygame.key.get_pressed()
+            if evs[273]:
+                kb_accel = 0.75
+            elif evs[274]:
+                kb_accel = -0.75
+            if evs[275]:
+                kb_steer = -1
+            elif evs[276]:
+                kb_steer = 1
+            best_action = Action(kb_steer, kb_accel)
+
         # запомним всё, что только можно: мы хотим учиться на своих ошибках
         self.sensor_data_history.append(sensor_info)
         self.chosen_actions_history.append(best_action)
@@ -133,12 +154,10 @@ class SimpleCarAgent(Agent):
 
         return best_action
 
-    def receive_feedback(self, reward, train_every=50, reward_depth=7):
+    def receive_feedback(self, reward):
         """
         Получить реакцию на последнее решение, принятое сетью, и проанализировать его
         :param reward: оценка внешним миром наших действий
-        :param train_every: сколько нужно собрать наблюдений, прежде чем запустить обучение на несколько эпох
-        :param reward_depth: на какую глубину по времени распространяется полученная награда
         """
         # считаем время жизни сети; помогает отмерять интервалы обучения
         self.step += 1
@@ -149,7 +168,7 @@ class SimpleCarAgent(Agent):
         # (если мы врезались в стену - разумно наказывать не только последнее
         # действие, но и предшествующие)
         i = -1
-        while len(self.reward_history) > abs(i) and abs(i) < reward_depth:
+        while len(self.reward_history) > abs(i) and abs(i) < self.reward_depth:
             self.reward_history[i] += reward
             reward *= 0.5
             i -= 1
@@ -157,16 +176,20 @@ class SimpleCarAgent(Agent):
         # Если у нас накопилось хоть чуть-чуть данных, давайте потренируем нейросеть
         # прежде чем собирать новые данные
         # (проверьте, что вы в принципе храните достаточно данных (параметр `history_data` в `__init__`),
-        # чтобы условие len(self.reward_history) >= train_every выполнялось
-        if not self.evaluate_mode and (len(self.reward_history) >= train_every) and not (self.step % train_every):
-            X_train = np.concatenate([self.sensor_data_history, self.chosen_actions_history], axis=1)
-            y_train = self.reward_history
-            train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
-            self.neural_net.SGD(training_data=train_data, epochs=15, mini_batch_size=train_every, eta=self.eta)
-            y_hat = self.neural_net.feedforward(X_train.transpose())
-            d = y_train - y_hat
-            error = np.sum(d*d)/d.shape[1]
-            if error > self.prev_error:
-                self.eta /= 1.2
-            self.prev_error = error
-            print("Step: %4d      Error function: %9.6f" % (self.step, error))
+        # чтобы условие len(self.reward_history) >= self.train_every выполнялось
+        if not self.evaluate_mode and not self.kb_control and (len(self.reward_history) >= self.train_every) and not (self.step % self.train_every):
+            self.learn()
+
+    def learn(self):
+        X_train = np.concatenate([self.sensor_data_history, self.chosen_actions_history], axis=1)
+        y_train = self.reward_history
+        train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
+        epochs = 300 if self.kb_control else 15
+        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta)
+        y_hat = self.neural_net.feedforward(X_train.transpose())
+        d = y_train - y_hat
+        error = np.sum(d*d)/d.shape[1]
+        if error > self.prev_error:
+            self.eta /= 1.2
+        self.prev_error = error
+        print("Step: %4d      Error function: %9.6f" % (self.step, error))
