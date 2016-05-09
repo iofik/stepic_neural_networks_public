@@ -130,7 +130,7 @@ class SimpleCarWorld(World):
 
         for i, agent in enumerate(self.agents):
             try:
-                agent.learn()
+                agent.learn(True)
                 filename = "network_config_agent_%d_layers_%s.txt" % (i, "_".join(map(str, agent.neural_net.sizes)))
                 agent.to_file(filename)
                 print("Saved agent parameters to '%s'" % filename)
@@ -226,8 +226,8 @@ class SimpleCarWorld(World):
                       text_color=white, bg_color=black)
             steer, acc = a.chosen_actions_history[-1]
             state = self.agent_states[a]
-            draw_text("Action: steer.: %.2f, accel: %.2f" % (steer, acc), self._info_surface, scale,
-                      self.size, text_color=white, bg_color=black, tlpoint=(self._info_surface.get_width() - 500, 10))
+            draw_text("Action: steer.: %.2f, accel: %.2f, autopilot: %s" % (steer, acc, 'off' if a.kb_control else 'on'),
+                    self._info_surface, scale, self.size, text_color=white, bg_color=black, tlpoint=(self._info_surface.get_width() - 500, 10))
             draw_text("Inputs: |v|=%.2f, sin(angle): %.2f, circle: %.2f" % (
                 abs(state.velocity), np.sin(angle(-state.position, state.heading)), self.circles[a]),
                       self._info_surface, scale,

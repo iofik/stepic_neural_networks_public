@@ -34,6 +34,7 @@ class SimpleCarAgent(Agent):
         :param history_data: количество хранимых нами данных о результатах предыдущих шагов
         """
         self.evaluate_mode = False  # этот агент учится или экзаменутеся? если учится, то False
+        self.allow_kb_control = False
         self.kb_control = False
         self._rays = 5 # выберите число лучей ладара; например, 5
         # here +2 is for 2 inputs from elements of Action that we are trying to predict
@@ -105,50 +106,63 @@ class SimpleCarAgent(Agent):
     def rays(self):
         return self._rays
 
+    def process_kb_input(self, velocity):
+        if not self.allow_kb_control:
+            return
+
+        kb_steer = 0
+        kb_accel = 0
+        evs = pygame.key.get_pressed()
+
+        if evs[275]:
+            kb_accel = 0.75
+            kb_steer = -1
+        elif evs[276]:
+            kb_accel = 0.75
+            kb_steer = 1
+        if evs[273]:
+            kb_accel = 0.75
+        elif evs[274]:
+            kb_accel = -0.75
+
+        if kb_accel != 0:
+            self.kb_control = True
+        elif evs[97]: # A
+            self.kb_control = False
+        if velocity > 0.2 and random.random() < 0.2*velocity:
+            kb_accel = -0.75
+
+        return Action(kb_steer, kb_accel) if self.kb_control else None
+
     def choose_action(self, sensor_info):
-        # хотим предсказать награду за все действия, доступные из текущего состояния
-        rewards_to_controls_map = {}
-        # дискретизируем множество значений, так как все возможные мы точно предсказать не сможем
-        for steering in np.linspace(-1, 1, 3):  # выбирать можно и другую частоту дискретизации, но
-            for acceleration in np.linspace(-0.75, 0.75, 3):  # в наших тестах будет именно такая
-                action = Action(steering, acceleration)
-                agent_vector_representation = np.append(sensor_info, action)
-                agent_vector_representation = agent_vector_representation.flatten()[:, np.newaxis]
-                predicted_reward = float(self.neural_net.feedforward(agent_vector_representation))
-                rewards_to_controls_map[predicted_reward] = action
+        best_action = self.process_kb_input(sensor_info[0])
 
-        # ищем действие, которое обещает максимальную награду
-        rewards = list(rewards_to_controls_map.keys())
-        highest_reward = max(rewards)
-        best_action = rewards_to_controls_map[highest_reward]
+        if not best_action:
+            # хотим предсказать награду за все действия, доступные из текущего состояния
+            rewards_to_controls_map = {}
+            # дискретизируем множество значений, так как все возможные мы точно предсказать не сможем
+            for steering in np.linspace(-1, 1, 3):  # выбирать можно и другую частоту дискретизации, но
+                for acceleration in np.linspace(-0.75, 0.75, 3):  # в наших тестах будет именно такая
+                    action = Action(steering, acceleration)
+                    agent_vector_representation = np.append(sensor_info, action)
+                    agent_vector_representation = agent_vector_representation.flatten()[:, np.newaxis]
+                    predicted_reward = float(self.neural_net.feedforward(agent_vector_representation))
+                    rewards_to_controls_map[predicted_reward] = action
 
-        # Добавим случайности, дух авантюризма. Иногда выбираем совершенно
-        # рандомное действие
-        if (not self.evaluate_mode) and (random.random() < 0.05):
-            highest_reward = rewards[np.random.choice(len(rewards))]
+            # ищем действие, которое обещает максимальную награду
+            rewards = list(rewards_to_controls_map.keys())
+            highest_reward = max(rewards)
             best_action = rewards_to_controls_map[highest_reward]
-        # следующие строки помогут вам понять, что предсказывает наша сеть
-        #     print("Chosen random action w/reward: {}".format(highest_reward))
-        # else:
-        #     print("Chosen action w/reward: {}".format(highest_reward))
 
-        if self.kb_control:
-            kb_steer = 0
-            kb_accel = 0
-            evs = pygame.key.get_pressed()
-            if evs[275]:
-                kb_accel = 0.75
-                kb_steer = -1
-            elif evs[276]:
-                kb_accel = 0.75
-                kb_steer = 1
-            if evs[273]:
-                kb_accel = 0.75
-            elif evs[274]:
-                kb_accel = -0.75
-            if kb_accel == 0 and sensor_info[0] > 0.2 and random.random() < 0.2*sensor_info[0]:
-                kb_accel = -0.75
-            best_action = Action(kb_steer, kb_accel)
+            # Добавим случайности, дух авантюризма. Иногда выбираем совершенно
+            # рандомное действие
+            if (not self.evaluate_mode) and (random.random() < 0.05):
+                highest_reward = rewards[np.random.choice(len(rewards))]
+                best_action = rewards_to_controls_map[highest_reward]
+            # следующие строки помогут вам понять, что предсказывает наша сеть
+            #     print("Chosen random action w/reward: {}".format(highest_reward))
+            # else:
+            #     print("Chosen action w/reward: {}".format(highest_reward))
 
         # запомним всё, что только можно: мы хотим учиться на своих ошибках
         self.sensor_data_history.append(sensor_info)
@@ -184,12 +198,12 @@ class SimpleCarAgent(Agent):
         if not self.evaluate_mode and not self.kb_control and (len(self.reward_history) >= self.train_every) and not (self.step % self.train_every):
             self.learn()
 
-    def learn(self):
+    def learn(self, final=False):
         X_train = np.concatenate([self.sensor_data_history, self.chosen_actions_history], axis=1)
         y_train = self.reward_history
         train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
-        epochs = 300 if self.kb_control else 15
-        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta, verbose=self.kb_control)
+        epochs = 150 if final else 15
+        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta, verbose=final)
         y_hat = self.neural_net.feedforward(X_train.transpose())
         d = y_train - y_hat
         error = np.sum(d*d)/d.shape[1]

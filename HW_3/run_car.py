@@ -24,18 +24,12 @@ np.random.seed(seed)
 random.seed(seed)
 m = generate_map(8, 5, 3, 3)
 
-if args.filename:
-    agent = SimpleCarAgent.from_file(args.filename)
-    w = SimpleCarWorld(1, m, SimplePhysics, SimpleCarAgent, timedelta=0.2)
-    if args.evaluate:
-        print(w.evaluate_agent(agent, steps))
-    else:
-        w.set_agents([agent])
-        w.run(steps)
+w = SimpleCarWorld(1, m, SimplePhysics, SimpleCarAgent, timedelta=0.2)
+agent = SimpleCarAgent.from_file(args.filename) if args.filename else SimpleCarAgent()
+agent.allow_kb_control = args.kb_control
+
+if args.evaluate:
+    print(w.evaluate_agent(agent, args.steps))
 else:
-    w = SimpleCarWorld(1, m, SimplePhysics, SimpleCarAgent, timedelta=0.2)
-    if args.kb_control:
-        agent = SimpleCarAgent()
-        agent.kb_control = True
-        w.set_agents([agent])
-    w.run(steps)
+    w.set_agents([agent])
+    w.run(args.steps)
