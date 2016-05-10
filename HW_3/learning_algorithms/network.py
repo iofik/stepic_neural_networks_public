@@ -28,7 +28,7 @@ def sigmoid_prime(z):
 
 
 class Network(object):
-    def __init__(self, sizes, output_function=sigmoid, output_derivative=sigmoid_prime):
+    def __init__(self, sizes, output_function=sigmoid, output_derivative=sigmoid_prime, l1=0, l2=0):
         """
         Список ``sizes`` содержит количество нейронов в соответствующих слоях
         нейронной сети. К примеру, если бы этот лист выглядел как [2, 3, 1],
@@ -53,6 +53,8 @@ class Network(object):
         self.output_function = output_function
         assert output_derivative is not None, "You should either provide derivative of the output function or leave it default!"
         self.output_derivative = output_derivative
+        self.l1 = l1
+        self.l2 = l2
 
     def feedforward(self, a):
         """
@@ -122,7 +124,7 @@ class Network(object):
             nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
 
         eps = eta / len(mini_batch)
-        self.weights = [w - eps * nw for w, nw in zip(self.weights, nabla_w)]
+        self.weights = [w - eps * nw - self.l1 * np.sign(w) - self.l2 * w for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b - eps * nb for b, nb in zip(self.biases, nabla_b)]
 
     def backprop(self, x, y):

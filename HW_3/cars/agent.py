@@ -43,7 +43,11 @@ class SimpleCarAgent(Agent):
                                    # внутренние слои сети: выберите, сколько и в каком соотношении вам нужно
                                    # например, (self.rays + 4) * 2 или просто число
                                    1],
-                                  output_function=lambda x: x, output_derivative=lambda x: 1)
+                                  output_function=lambda x: x,
+                                  output_derivative=lambda x: 1,
+                                  l1 = 0,
+                                  l2 = 0,
+                                  )
         self.sensor_data_history = deque([], maxlen=history_data)
         self.chosen_actions_history = deque([], maxlen=history_data)
         self.reward_history = deque([], maxlen=history_data)
