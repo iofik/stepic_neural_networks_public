@@ -13,6 +13,7 @@ parser.add_argument("-s", "--steps", type=int)
 parser.add_argument("-f", "--filename", type=str)
 parser.add_argument("-e", "--evaluate", type=bool)
 parser.add_argument("-k", "--kb-control", action='store_true')
+parser.add_argument("-n", "--number", type=int)
 parser.add_argument("--seed", type=int)
 args = parser.parse_args()
 
@@ -28,8 +29,11 @@ w = SimpleCarWorld(1, m, SimplePhysics, SimpleCarAgent, timedelta=0.2)
 agent = SimpleCarAgent.from_file(args.filename) if args.filename else SimpleCarAgent()
 agent.allow_kb_control = args.kb_control
 
+agents = [agent] + [SimpleCarAgent() for i in range(1, args.number or 1)]
+
+
 if args.evaluate:
-    print(w.evaluate_agent(agent, args.steps))
+    print(w.evaluate_agent(agents[0], args.steps))
 else:
-    w.set_agents([agent])
+    w.set_agents(agents)
     w.run(args.steps)

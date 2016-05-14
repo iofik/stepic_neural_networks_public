@@ -28,6 +28,23 @@ class Agent(metaclass=ABCMeta):
         pass
 
 class SimpleCarAgent(Agent):
+    # One NN for all:
+    _rays = 5
+    _neural_net = Network(
+            [
+                _rays + 4,
+                # внутренние слои сети: выберите, сколько и в каком соотношении вам нужно
+                # например, (self.rays + 4) * 2 или просто число
+                (_rays + 4) * 2,
+                4,
+                1
+                ],
+            output_function=lambda x: x,
+            output_derivative=lambda x: 1,
+            l1 = 0,
+            l2 = 0,
+            )
+
     def __init__(self, history_data=int(50000)):
         """
         Создаёт машинку
@@ -36,18 +53,8 @@ class SimpleCarAgent(Agent):
         self.evaluate_mode = False  # этот агент учится или экзаменутеся? если учится, то False
         self.allow_kb_control = False
         self.kb_control = False
-        self._rays = 5 # выберите число лучей ладара; например, 5
-        # here +2 is for 2 inputs from elements of Action that we are trying to predict
-        self.neural_net = Network([self.rays + 4,
-                                   (self.rays + 4) * 2,
-                                   # внутренние слои сети: выберите, сколько и в каком соотношении вам нужно
-                                   # например, (self.rays + 4) * 2 или просто число
-                                   1],
-                                  output_function=lambda x: x,
-                                  output_derivative=lambda x: 1,
-                                  l1 = 0,
-                                  l2 = 0,
-                                  )
+        self._rays = SimpleCarAgent._rays
+        self.neural_net = SimpleCarAgent._neural_net
         self.sensor_data_history = deque([], maxlen=history_data)
         self.chosen_actions_history = deque([], maxlen=history_data)
         self.reward_history = deque([], maxlen=history_data)
@@ -206,7 +213,7 @@ class SimpleCarAgent(Agent):
         X_train = np.concatenate([self.sensor_data_history, self.chosen_actions_history], axis=1)
         y_train = self.reward_history
         train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
-        epochs = 150 if final else 15
+        epochs = 30 if final else 15
         self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta, verbose=final)
         y_hat = self.neural_net.feedforward(X_train.transpose())
         d = y_train - y_hat
