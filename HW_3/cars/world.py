@@ -13,7 +13,7 @@ from cars.utils import CarState, to_px, rotate, intersect_ray_with_segment, draw
 
 black = (0, 0, 0)
 white = (255, 255, 255)
-
+sleep = lambda x: None
 
 class World(metaclass=ABCMeta):
     @abstractmethod
@@ -40,7 +40,7 @@ class SimpleCarWorld(World):
         """
         Инициализирует мир
         :param num_agents: число агентов в мире
-        :param car_map: карта, на которой всё происходит (см. track.py0
+        :param car_map: карта, на которой всё происходит (см. track.py)
         :param Physics: класс физики, реализующий столкновения и перемещения
         :param agent_class: класс агентов в мире
         :param physics_pars: дополнительные параметры, передаваемые в конструктор класса физики
@@ -62,7 +62,6 @@ class SimpleCarWorld(World):
          agents агентов класса agent_class; если список, то в мир попадут все агенты из списка
         :param agent_class: класс создаваемых агентов, если agents - это int
         """
-        pos = (self.map[0][0] + self.map[0][1]) / 2
         vel = 0
         heading = rect(-0.3, 1)
 
@@ -73,7 +72,10 @@ class SimpleCarWorld(World):
         else:
             raise ValueError("Parameter agent should be int or list of agents instead of %s" % type(agents))
 
-        self.agent_states = {a: CarState(pos, vel, heading) for a in self.agents}
+        poses = [ (self.map[i%len(self.map)][0] + self.map[i%len(self.map)][1]) / 2
+                    for i in range(len(self.agents)) ]
+
+        self.agent_states = {a: CarState(pos, vel, heading) for (a,pos) in zip(self.agents, poses)}
         self.circles = {a: 0 for a in self.agents}
 
         self._agent_surfaces = []
@@ -126,7 +128,7 @@ class SimpleCarWorld(World):
             self.visualize(scale)
             if self._update_display() == pygame.QUIT:
                 break
-            #sleep(0.1)
+            sleep(0.1)
 
         for i, agent in enumerate(self.agents):
             try:
@@ -164,7 +166,7 @@ class SimpleCarWorld(World):
                 self.visualize(scale)
                 if self._update_display() == pygame.QUIT:
                     break
-                #sleep(0.05)
+                sleep(0.05)
 
         return np.mean(rewards)
 
