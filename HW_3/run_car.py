@@ -11,7 +11,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--steps", type=int)
 parser.add_argument("-f", "--filename", type=str)
-parser.add_argument("-e", "--evaluate", type=bool)
+parser.add_argument("-e", "--evaluate", action='store_true')
 parser.add_argument("-k", "--kb-control", action='store_true')
 parser.add_argument("-n", "--number", type=int)
 parser.add_argument("--seed", type=int)
