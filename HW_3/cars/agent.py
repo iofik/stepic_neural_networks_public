@@ -53,8 +53,6 @@ class SimpleCarAgent(Agent):
         self.evaluate_mode = False  # этот агент учится или экзаменутеся? если учится, то False
         self.allow_kb_control = False
         self.kb_control = False
-        self._rays = SimpleCarAgent._rays
-        self.neural_net = SimpleCarAgent._neural_net
         self.sensor_data_history = deque([], maxlen=history_data)
         self.chosen_actions_history = deque([], maxlen=history_data)
         self.reward_history = deque([], maxlen=history_data)
@@ -70,7 +68,7 @@ class SimpleCarAgent(Agent):
         Создание агента по параметрам его нейронной сети. Разбираться не обязательно.
         """
         agent = SimpleCarAgent()
-        agent._rays = weights[0].shape[1] - 4
+        SimpleCarAgent._rays = weights[0].shape[1] - 4
         nn = Network(layers, output_function=lambda x: x, output_derivative=lambda x: 1)
 
         if len(weights) != len(nn.weights):
@@ -87,7 +85,7 @@ class SimpleCarAgent(Agent):
                 raise AssertionError("biases[%d].shape = %s instead of %s" % (i, b.shape, right_b.shape))
         nn.biases = biases
 
-        agent.neural_net = nn
+        SimpleCarAgent._neural_net = nn
 
         return agent
 
@@ -115,7 +113,11 @@ class SimpleCarAgent(Agent):
 
     @property
     def rays(self):
-        return self._rays
+        return SimpleCarAgent._rays
+
+    @property
+    def neural_net(self):
+        return SimpleCarAgent._neural_net
 
     def process_kb_input(self, velocity):
         if not self.allow_kb_control:
