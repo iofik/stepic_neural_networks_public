@@ -33,7 +33,7 @@ agents = [agent] + [SimpleCarAgent() for i in range(1, args.number or 1)]
 
 
 if args.evaluate:
-    print(w.evaluate_agent(agents[0], args.steps))
+    print(w.evaluate_agent(agents[0], args.steps or 1000))
 else:
     w.set_agents(agents)
     w.run(args.steps)

@@ -131,7 +131,7 @@ class SimpleCarWorld(World):
             sleep(0.1)
         type(self.agents[0]).learn_all(self.agents)
 
-    def evaluate_agent(self, agent, steps=1000, visual=True):
+    def evaluate_agent(self, agent, steps, visual=True):
         """
         Прогонка цикла мира для конкретного агента (см. пример использования в комментариях после if _name__ == "__main__")
         :param agent: SimpleCarAgent
