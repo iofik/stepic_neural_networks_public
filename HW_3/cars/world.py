@@ -129,7 +129,7 @@ class SimpleCarWorld(World):
             if self._update_display() == pygame.QUIT:
                 break
             sleep(0.1)
-        self.agents[0].learn(True)
+        type(self.agents[0]).learn_all(self.agents)
 
     def evaluate_agent(self, agent, steps=1000, visual=True):
         """

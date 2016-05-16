@@ -58,6 +58,7 @@ class SimpleCarAgent(Agent):
         self.reward_history = deque([], maxlen=history_data)
         self.step = 0
         self.eta = 0.05
+        self.final_eta = 0.01
         self.prev_error = np.infty
         self.train_every = 50  # сколько нужно собрать наблюдений, прежде чем запустить обучение на несколько эпох
         self.reward_depth = 7 # на какую глубину по времени распространяется полученная награда
@@ -216,12 +217,13 @@ class SimpleCarAgent(Agent):
         y_train = self.reward_history
         train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
         epochs = 150 if final else 15
-        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta, verbose=final)
+        eta = self.final_eta if final else self.eta
+        self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=eta, verbose=final)
         y_hat = self.neural_net.feedforward(X_train.transpose())
         d = y_train - y_hat
         error = np.sum(d*d)/d.shape[1]
-        if error > self.prev_error:
-            self.eta /= 1.1
+        #if error > self.prev_error:
+        #    self.eta /= 1.01
         self.prev_error = error
         print("Step: %4d      Error function: %9.6f" % (self.step, error))
         if save:
@@ -229,3 +231,10 @@ class SimpleCarAgent(Agent):
             self.to_file(filename)
             if final:
                 print("Saved agent parameters to '%s'" % filename)
+
+    @classmethod
+    def learn_all(cls, agents):
+        agent = cls()
+        for f in ['sensor_data_history', 'chosen_actions_history', 'reward_history', 'step']:
+            setattr(agent, f, sum((getattr(a, f) for a in agents), type(getattr(agent, f))()))
+        agent.learn(True)
