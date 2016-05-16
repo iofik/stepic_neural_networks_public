@@ -211,11 +211,11 @@ class SimpleCarAgent(Agent):
         if not self.evaluate_mode and not self.kb_control and (len(self.reward_history) >= self.train_every) and not (self.step % self.train_every):
             self.learn()
 
-    def learn(self, final=False):
+    def learn(self, final=False, save=True):
         X_train = np.concatenate([self.sensor_data_history, self.chosen_actions_history], axis=1)
         y_train = self.reward_history
         train_data = [(x[:, np.newaxis], y) for x, y in zip(X_train, y_train)]
-        epochs = 30 if final else 15
+        epochs = 150 if final else 15
         self.neural_net.SGD(training_data=train_data, epochs=epochs, mini_batch_size=self.train_every, eta=self.eta, verbose=final)
         y_hat = self.neural_net.feedforward(X_train.transpose())
         d = y_train - y_hat
@@ -224,3 +224,8 @@ class SimpleCarAgent(Agent):
             self.eta /= 1.1
         self.prev_error = error
         print("Step: %4d      Error function: %9.6f" % (self.step, error))
+        if save:
+            filename = "network_config_layers_%s.txt" % "_".join(map(str, self.neural_net.sizes))
+            self.to_file(filename)
+            if final:
+                print("Saved agent parameters to '%s'" % filename)
