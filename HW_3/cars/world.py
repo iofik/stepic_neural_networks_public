@@ -108,9 +108,11 @@ class SimpleCarWorld(World):
         :return reward: награду агента (возможно, отрицательную)
         """
         a = np.sin(angle(state.position, state.heading))
-        heading_reward = 1 if a > 0.1 else a if a > 0 else 0
-        heading_penalty = a if a <= 0 else 0
-        idle_penalty = 0 if abs(state.velocity) > self.MIN_SPEED else -self.IDLENESS_PENALTY
+        heading_reward = a if a > 0 else 0
+        heading_penalty = -max(abs(state.velocity), 1) if a <= 0 else 0
+        #heading_reward = 1 if a > 0.1 else a if a > 0 else 0
+        #heading_penalty = a if a <= 0 else 0
+        idle_penalty = 0 if abs(state.velocity) > self.MIN_SPEED or heading_penalty else -self.IDLENESS_PENALTY
         speeding_penalty = 0 if abs(state.velocity) < self.MAX_SPEED else -self.SPEEDING_PENALTY * abs(state.velocity)
         collision_penalty = - max(abs(state.velocity), 0.1) * int(collision) * self.COLLISION_PENALTY
 
